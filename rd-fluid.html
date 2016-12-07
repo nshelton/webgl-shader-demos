@@ -218,9 +218,13 @@ body {
       void main()
       {
         vec4 result =  texture2D(source0, uv);
+        vec2 aspect = vec2(1.0, pixelsize.x/pixelsize.y);
 
-        vec2 text_uv = vec2(uv.x/2.0 + 0.25, 1. - uv.y);
-        vec4 text =  texture2D(source1, text_uv); 
+        vec2 text_uv = aspect * (uv - 0.5) * 4. + 0.5;
+
+        text_uv = vec2(text_uv.x, 1.0 - text_uv.y);
+        // text_uv -= vec2(0.25);
+        vec4 text = texture2D(source1, text_uv); 
 
         if(mouse.x > 0. && length(mouse/pixelsize - uv/pixelsize) < 10. ) {
 
@@ -233,7 +237,20 @@ body {
           result.y = -dir.y;
         }
 
-        gl_FragColor =  result + text * 0.001;
+        float weight =  clamp(cos(time/ 100. + uv.x * 10.), 0.0, 1.0);
+        vec4 effect = vec4(.0);
+        if (  text.a > 0.1 )  {
+          // if ( fract(time/ 100.0) < 0.4)
+          effect.xy =  weight *vec2 ( 1.0 , -1.0) * -10.0 * sin(time/40000.0) * (text_uv-0.5);
+
+          effect.b =  weight * 1.0;
+          effect.a =  weight * sin(time/200.0);
+          result = weight * effect + (1.0 - weight) * result;
+
+        }
+
+
+        gl_FragColor =  result ;
       }
 
     </script>
@@ -378,7 +395,7 @@ body {
 
 
         this.text_tex = new GLOW.Texture( { 
-          data: "./img/title.png",
+          data: document.getElementById("title"),
           wrap: GL.CLAMP_TO_EDGE,
         });
 
@@ -428,7 +445,7 @@ body {
 
         // relaxation to solve diffusion eq - TODO use seperable gaussian?
           // little bit of diffusion
-        for ( var i = 0; i < 3; i ++ ) {
+        for ( var i = 0; i < 4; i ++ ) {
           this.shaderPass(this.diffuse_a_to_b, this.FBO_B); 
           this.shaderPass(this.diffuse_b_to_a, this.FBO_A);
         }
@@ -481,10 +498,10 @@ body {
 </head>
 
 <body id="container">
+<img id="title" style="display:none;" src ="img/title.png">
 <!--   <div > </div>
   <div class="overlay"> 
     <h1>WebGL Demos </h1>
-
 
 
   </div> -->
